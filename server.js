@@ -1,6 +1,7 @@
 const express = require('express');
 const path = require('path');
 const fs = require('fs');
+const dotenv = require('dotenv');
 const StocktakeManager = require('./lib/stocktake-manager');
 const StocktakeCreator = require('./stocktake-creator');
 const HaloAPI = require('./lib/halo-api');
@@ -19,8 +20,8 @@ app.use(express.json());
 
 // IP Allowlist - uses X-Forwarded-For when source is trusted HAProxy
 const dns = require('dns');
-const PROXY_IP = process.env.PROXY_IP || '127.0.0.1';
-const ALLOWLIST_HOST = process.env.ALLOWLIST_HOST || '';
+let PROXY_IP = process.env.PROXY_IP || '127.0.0.1';
+let ALLOWLIST_HOST = process.env.ALLOWLIST_HOST || '';
 const ALLOWLIST_TTL_MS = 5 * 60 * 1000;
 let allowlistCache = new Set(['127.0.0.1', '::1', '::ffff:127.0.0.1']);
 let allowlistFetchedAt = 0;
@@ -458,6 +459,122 @@ app.post('/api/labels/generate', async (req, res) => {
   } catch (error) {
     console.error('Error generating labels:', error);
     res.status(500).json({ error: 'Failed to generate labels: ' + error.message });
+  }
+});
+
+// Settings — view/edit .env-backed configuration from the web UI
+const ENV_PATH = path.join(__dirname, '.env');
+
+// key -> { secret } — only these keys can be read or written via the API
+const SETTINGS_FIELDS = {
+  HALO_CLIENT_ID: { secret: true },
+  HALO_CLIENT_SECRET: { secret: true },
+  HALO_BASE_URL: { secret: false },
+  HALO_TOKEN_URL: { secret: false },
+  PORT: { secret: false },
+  ALLOWLIST_HOST: { secret: false },
+  PROXY_IP: { secret: false },
+  SYNCRO_API_TOKEN: { secret: true },
+  SYNCRO_BASE_URL: { secret: false }
+};
+
+function readEnvFile() {
+  try {
+    return dotenv.parse(fs.readFileSync(ENV_PATH));
+  } catch {
+    return {};
+  }
+}
+
+function writeEnvFile(vars) {
+  const lines = [
+    '# Halo API Configuration',
+    `HALO_CLIENT_ID=${vars.HALO_CLIENT_ID || ''}`,
+    `HALO_CLIENT_SECRET=${vars.HALO_CLIENT_SECRET || ''}`,
+    `HALO_BASE_URL=${vars.HALO_BASE_URL || ''}`,
+    `HALO_TOKEN_URL=${vars.HALO_TOKEN_URL || ''}`,
+    '',
+    '# Server Configuration',
+    `PORT=${vars.PORT || ''}`,
+    '',
+    '# IP Allowlist',
+    `ALLOWLIST_HOST=${vars.ALLOWLIST_HOST || ''}`,
+    `PROXY_IP=${vars.PROXY_IP || ''}`,
+    '',
+    '# Syncro API (one-off asset-tag import)',
+    `SYNCRO_API_TOKEN=${vars.SYNCRO_API_TOKEN || ''}`,
+    `SYNCRO_BASE_URL=${vars.SYNCRO_BASE_URL || ''}`,
+    ''
+  ];
+  fs.writeFileSync(ENV_PATH, lines.join('\n'), { mode: 0o600 });
+}
+
+// Get current settings — secret fields are masked (never returned in full)
+app.get('/api/settings', (req, res) => {
+  const current = { ...readEnvFile(), ...process.env };
+  const out = {};
+  for (const [key, meta] of Object.entries(SETTINGS_FIELDS)) {
+    const value = current[key] || '';
+    if (meta.secret) {
+      out[key] = { set: !!value, masked: value ? `••••${value.slice(-4)}` : '' };
+    } else {
+      out[key] = { value };
+    }
+  }
+  res.json(out);
+});
+
+// Update settings — writes .env, updates process.env, and hot-reloads the
+// live Halo API clients. PORT/allowlist DNS host changes need a restart or
+// take effect on the next allowlist refresh respectively.
+app.post('/api/settings', (req, res) => {
+  try {
+    const body = req.body || {};
+    const current = { ...readEnvFile(), ...process.env };
+    const updated = { ...current };
+
+    for (const key of Object.keys(SETTINGS_FIELDS)) {
+      if (!(key in body)) continue;
+      const value = String(body[key] ?? '').trim();
+      // Blank secret fields mean "leave unchanged" — the UI never shows the
+      // real value, so an empty submit isn't an intentional clear.
+      if (SETTINGS_FIELDS[key].secret && !value) continue;
+      updated[key] = value;
+    }
+
+    if (updated.PORT && !/^\d+$/.test(updated.PORT)) {
+      return res.status(400).json({ error: 'PORT must be a number' });
+    }
+
+    writeEnvFile(updated);
+    for (const key of Object.keys(SETTINGS_FIELDS)) {
+      process.env[key] = updated[key] || '';
+    }
+
+    halo.configure({
+      baseURL: updated.HALO_BASE_URL,
+      tokenURL: updated.HALO_TOKEN_URL,
+      clientId: updated.HALO_CLIENT_ID,
+      clientSecret: updated.HALO_CLIENT_SECRET
+    });
+    stocktakeManager.haloAPI.configure({
+      baseURL: updated.HALO_BASE_URL,
+      tokenURL: updated.HALO_TOKEN_URL,
+      clientId: updated.HALO_CLIENT_ID,
+      clientSecret: updated.HALO_CLIENT_SECRET
+    });
+
+    const portChanged = String(current.PORT || PORT) !== String(updated.PORT || PORT);
+    if (updated.ALLOWLIST_HOST !== ALLOWLIST_HOST || updated.PROXY_IP !== PROXY_IP) {
+      ALLOWLIST_HOST = updated.ALLOWLIST_HOST || '';
+      PROXY_IP = updated.PROXY_IP || '127.0.0.1';
+      refreshAllowlist();
+    }
+
+    res.json({ success: true, restartRequired: portChanged });
+  } catch (error) {
+    console.error('Error saving settings:', error);
+    res.status(500).json({ error: 'Failed to save settings: ' + error.message });
   }
 });
 

@@ -848,6 +848,7 @@
             <div class="tab" data-tab="active">Active Stocktake</div>
             <div class="tab" data-tab="reports">Reports</div>
             <div class="tab" data-tab="labels">Labels</div>
+            <div class="tab" data-tab="settings">⚙️ Settings</div>
         </div>
 
         <!-- Dashboard Tab -->
@@ -996,6 +997,66 @@
                 </div>
             </div>
         </div>
+
+        <!-- Settings Tab -->
+        <div id="settings" class="tab-content">
+            <div class="card">
+                <h2>⚙️ Settings</h2>
+                <p class="muted">Reads and writes this server's <code>.env</code> file. Secret fields are never shown in full — leave them blank to keep the current value.</p>
+                <div id="settingsBanner"></div>
+
+                <h3 style="margin-top:20px;">Halo API</h3>
+                <div class="input-group">
+                    <label for="settingHaloBaseUrl">Halo Base URL</label>
+                    <input type="text" id="settingHaloBaseUrl" placeholder="https://halo.example.com">
+                </div>
+                <div class="input-group">
+                    <label for="settingHaloTokenUrl">Halo Token URL</label>
+                    <input type="text" id="settingHaloTokenUrl" placeholder="https://halo.example.com/auth/token">
+                </div>
+                <div class="input-group">
+                    <label for="settingHaloClientId">Halo Client ID</label>
+                    <input type="password" id="settingHaloClientId" placeholder="(unchanged)" autocomplete="off">
+                    <p id="settingHaloClientIdStatus" class="muted"></p>
+                </div>
+                <div class="input-group">
+                    <label for="settingHaloClientSecret">Halo Client Secret</label>
+                    <input type="password" id="settingHaloClientSecret" placeholder="(unchanged)" autocomplete="off">
+                    <p id="settingHaloClientSecretStatus" class="muted"></p>
+                </div>
+
+                <h3 style="margin-top:20px;">Server</h3>
+                <div class="input-group">
+                    <label for="settingPort">Port</label>
+                    <input type="text" id="settingPort" placeholder="3000">
+                    <p class="muted">Changing this requires a manual server restart.</p>
+                </div>
+
+                <h3 style="margin-top:20px;">IP Allowlist</h3>
+                <div class="input-group">
+                    <label for="settingAllowlistHost">Allowlist Host</label>
+                    <input type="text" id="settingAllowlistHost" placeholder="your-allowlist.example.com">
+                    <p class="muted">DNS-resolved on save. Leave blank to disable the allowlist.</p>
+                </div>
+                <div class="input-group">
+                    <label for="settingProxyIp">Proxy IP</label>
+                    <input type="text" id="settingProxyIp" placeholder="10.0.0.1">
+                </div>
+
+                <h3 style="margin-top:20px;">Syncro API (asset-tag import script)</h3>
+                <div class="input-group">
+                    <label for="settingSyncroBaseUrl">Syncro Base URL</label>
+                    <input type="text" id="settingSyncroBaseUrl" placeholder="https://elliotts.syncromsp.com">
+                </div>
+                <div class="input-group">
+                    <label for="settingSyncroToken">Syncro API Token</label>
+                    <input type="password" id="settingSyncroToken" placeholder="(unchanged)" autocomplete="off">
+                    <p id="settingSyncroTokenStatus" class="muted"></p>
+                </div>
+
+                <button class="button" onclick="saveSettings()" id="saveSettingsBtn">Save Settings</button>
+            </div>
+        </div>
     </div>
 
     <!-- Quantity Input Modal -->
@@ -1091,13 +1152,13 @@
         // Back/forward — re-activate tab from hash without pushing new history
         window.addEventListener('popstate', () => {
             const { tab } = hashSegments();
-            const valid = ['dashboard', 'create', 'active', 'reports', 'labels'];
+            const valid = ['dashboard', 'create', 'active', 'reports', 'labels', 'settings'];
             activateTab(valid.includes(tab) ? tab : 'dashboard', false);
         });
 
         // On initial load — jump to tab from URL hash
         (function initTabFromHash() {
-            const valid = ['dashboard', 'create', 'active', 'reports', 'labels'];
+            const valid = ['dashboard', 'create', 'active', 'reports', 'labels', 'settings'];
             const { tab, sub } = hashSegments();
             const finalTab = valid.includes(tab) ? tab : 'dashboard';
             // Review sub-mode is read by loadActiveStocktake after the tab activates
@@ -1117,6 +1178,66 @@
                 case 'active':
                     loadActiveStocktake();
                     break;
+                case 'settings':
+                    loadSettings();
+                    break;
+            }
+        }
+
+        // Settings tab — read/write the server's .env via /api/settings
+        async function loadSettings() {
+            const banner = document.getElementById('settingsBanner');
+            banner.innerHTML = '';
+            try {
+                const settings = await apiCall('/api/settings');
+                document.getElementById('settingHaloBaseUrl').value = settings.HALO_BASE_URL.value;
+                document.getElementById('settingHaloTokenUrl').value = settings.HALO_TOKEN_URL.value;
+                document.getElementById('settingPort').value = settings.PORT.value;
+                document.getElementById('settingAllowlistHost').value = settings.ALLOWLIST_HOST.value;
+                document.getElementById('settingProxyIp').value = settings.PROXY_IP.value;
+                document.getElementById('settingSyncroBaseUrl').value = settings.SYNCRO_BASE_URL.value;
+
+                document.getElementById('settingHaloClientId').value = '';
+                document.getElementById('settingHaloClientSecret').value = '';
+                document.getElementById('settingSyncroToken').value = '';
+
+                document.getElementById('settingHaloClientIdStatus').textContent =
+                    settings.HALO_CLIENT_ID.set ? `Currently set (${settings.HALO_CLIENT_ID.masked})` : 'Not set';
+                document.getElementById('settingHaloClientSecretStatus').textContent =
+                    settings.HALO_CLIENT_SECRET.set ? `Currently set (${settings.HALO_CLIENT_SECRET.masked})` : 'Not set';
+                document.getElementById('settingSyncroTokenStatus').textContent =
+                    settings.SYNCRO_API_TOKEN.set ? `Currently set (${settings.SYNCRO_API_TOKEN.masked})` : 'Not set';
+            } catch (err) {
+                banner.innerHTML = `<div class="alert error">Failed to load settings: ${escapeHtml(err.message)}</div>`;
+            }
+        }
+
+        async function saveSettings() {
+            const banner = document.getElementById('settingsBanner');
+            const btn = document.getElementById('saveSettingsBtn');
+            banner.innerHTML = '';
+            btn.disabled = true;
+            try {
+                const payload = {
+                    HALO_BASE_URL: document.getElementById('settingHaloBaseUrl').value.trim(),
+                    HALO_TOKEN_URL: document.getElementById('settingHaloTokenUrl').value.trim(),
+                    HALO_CLIENT_ID: document.getElementById('settingHaloClientId').value,
+                    HALO_CLIENT_SECRET: document.getElementById('settingHaloClientSecret').value,
+                    PORT: document.getElementById('settingPort').value.trim(),
+                    ALLOWLIST_HOST: document.getElementById('settingAllowlistHost').value.trim(),
+                    PROXY_IP: document.getElementById('settingProxyIp').value.trim(),
+                    SYNCRO_BASE_URL: document.getElementById('settingSyncroBaseUrl').value.trim(),
+                    SYNCRO_API_TOKEN: document.getElementById('settingSyncroToken').value
+                };
+                const result = await apiCall('/api/settings', { method: 'POST', body: payload });
+                await loadSettings();
+                banner.innerHTML = result.restartRequired
+                    ? `<div class="alert success">Saved. Port changed — restart the server to apply it.</div>`
+                    : `<div class="alert success">Settings saved.</div>`;
+            } catch (err) {
+                banner.innerHTML = `<div class="alert error">Failed to save settings: ${escapeHtml(err.message)}</div>`;
+            } finally {
+                btn.disabled = false;
             }
         }
 
