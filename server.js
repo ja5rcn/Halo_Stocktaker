@@ -462,6 +462,210 @@ app.post('/api/labels/generate', async (req, res) => {
   }
 });
 
+// Stock Valuation Report — RCN/HQ (or whichever sites are flagged as stock
+// locations in Halo) physical stock + consigned stock on open Sales Orders.
+const VALUATION_CONFIG_PATH = path.join(__dirname, 'data', 'valuation-config.json');
+
+function readValuationConfig() {
+  try {
+    return JSON.parse(fs.readFileSync(VALUATION_CONFIG_PATH, 'utf8'));
+  } catch {
+    return { stockSiteIds: [] };
+  }
+}
+
+function writeValuationConfig(config) {
+  fs.mkdirSync(path.dirname(VALUATION_CONFIG_PATH), { recursive: true });
+  fs.writeFileSync(VALUATION_CONFIG_PATH, JSON.stringify(config, null, 2));
+}
+
+function valuationRowsToCsv(rows) {
+  const esc = (v) => {
+    const s = String(v ?? '');
+    return /[",\n\r]/.test(s) ? '"' + s.replace(/"/g, '""') + '"' : s;
+  };
+  const header = ['itemId', 'itemName', 'quantity', 'unitCost', 'value', 'sourceType', 'source'];
+  const lines = [header.join(',')];
+  for (const r of rows) lines.push(header.map(h => esc(r[h])).join(','));
+  return lines.join('\n');
+}
+
+// List Halo sites flagged as stock locations, plus the currently saved selection
+app.get('/api/valuation/sites', async (req, res) => {
+  try {
+    const sites = await halo.listStockSites();
+    const config = readValuationConfig();
+    res.json({ sites, selectedSiteIds: config.stockSiteIds || [] });
+  } catch (error) {
+    console.error('Error listing stock sites:', error);
+    res.status(500).json({ error: 'Failed to list stock sites: ' + error.message });
+  }
+});
+
+// Save which stock-location sites feed the valuation report
+app.post('/api/valuation/sites', (req, res) => {
+  try {
+    const { stockSiteIds } = req.body;
+    if (!Array.isArray(stockSiteIds)) {
+      return res.status(400).json({ error: 'stockSiteIds array required' });
+    }
+    writeValuationConfig({ stockSiteIds: stockSiteIds.map(Number).filter(Number.isFinite) });
+    res.json({ success: true });
+  } catch (error) {
+    console.error('Error saving stock sites:', error);
+    res.status(500).json({ error: 'Failed to save stock sites: ' + error.message });
+  }
+});
+
+// Run the valuation report live against Halo
+app.get('/api/valuation/report', async (req, res) => {
+  try {
+    const config = readValuationConfig();
+    if (!config.stockSiteIds || config.stockSiteIds.length === 0) {
+      return res.status(400).json({ error: 'No stock sites selected — pick at least one in Settings' });
+    }
+    const report = await halo.getStockValuationReport(config.stockSiteIds);
+    res.json(report);
+  } catch (error) {
+    console.error('Error generating valuation report:', error);
+    res.status(500).json({ error: 'Failed to generate valuation report: ' + error.message });
+  }
+});
+
+// Same report as a CSV download
+app.get('/api/valuation/report.csv', async (req, res) => {
+  try {
+    const config = readValuationConfig();
+    if (!config.stockSiteIds || config.stockSiteIds.length === 0) {
+      return res.status(400).json({ error: 'No stock sites selected — pick at least one in Settings' });
+    }
+    const report = await halo.getStockValuationReport(config.stockSiteIds);
+    const csv = valuationRowsToCsv(report.rows);
+    res.setHeader('Content-Type', 'text/csv');
+    res.setHeader('Content-Disposition', `attachment; filename="stock-valuation-${new Date().toISOString().slice(0, 10)}.csv"`);
+    res.send(csv);
+  } catch (error) {
+    console.error('Error exporting valuation report:', error);
+    res.status(500).json({ error: 'Failed to export valuation report: ' + error.message });
+  }
+});
+
+// Valuation report history — saved snapshots the report can be re-downloaded
+// from later. Archive/delete are both soft states (recoverable), matching the
+// active/archived/deleted pattern used for customers elsewhere in this org's tools.
+const VALUATION_HISTORY_DIR = path.join(__dirname, 'data', 'valuation-history');
+const VALUATION_HISTORY_INDEX = path.join(VALUATION_HISTORY_DIR, 'index.json');
+const VALUATION_HISTORY_STATUSES = ['active', 'archived', 'deleted'];
+
+// IDs are always generateHistoryId() output (timestamp+random base36). Reject
+// anything else before it reaches a file path — same class of bug as the
+// stocktake-id path traversal fixed earlier.
+function assertValidHistoryId(id) {
+  if (typeof id !== 'string' || !/^[a-z0-9]+$/i.test(id)) {
+    throw new Error('Invalid history id');
+  }
+}
+
+function generateHistoryId() {
+  return Date.now().toString(36) + Math.random().toString(36).slice(2);
+}
+
+function readValuationHistoryIndex() {
+  try {
+    return JSON.parse(fs.readFileSync(VALUATION_HISTORY_INDEX, 'utf8'));
+  } catch {
+    return [];
+  }
+}
+
+function writeValuationHistoryIndex(index) {
+  fs.mkdirSync(VALUATION_HISTORY_DIR, { recursive: true });
+  fs.writeFileSync(VALUATION_HISTORY_INDEX, JSON.stringify(index, null, 2));
+}
+
+// Save the last-run report as a permanent, downloadable snapshot
+app.post('/api/valuation/history', (req, res) => {
+  try {
+    const { rows, totals, generatedAt } = req.body || {};
+    if (!Array.isArray(rows) || !totals) {
+      return res.status(400).json({ error: 'rows and totals required' });
+    }
+    const id = generateHistoryId();
+    const savedAt = new Date().toISOString();
+    const entry = { id, generatedAt: generatedAt || savedAt, savedAt, status: 'active', totals, rows };
+
+    fs.mkdirSync(VALUATION_HISTORY_DIR, { recursive: true });
+    fs.writeFileSync(path.join(VALUATION_HISTORY_DIR, `${id}.json`), JSON.stringify(entry, null, 2));
+
+    const index = readValuationHistoryIndex();
+    index.push({ id, generatedAt: entry.generatedAt, savedAt, status: 'active', totals });
+    writeValuationHistoryIndex(index);
+
+    res.json({ success: true, id });
+  } catch (error) {
+    console.error('Error saving valuation history:', error);
+    res.status(500).json({ error: 'Failed to save history: ' + error.message });
+  }
+});
+
+// List saved report snapshots (summary only — no row data)
+app.get('/api/valuation/history', (req, res) => {
+  try {
+    const index = readValuationHistoryIndex();
+    index.sort((a, b) => new Date(b.savedAt) - new Date(a.savedAt));
+    res.json({ history: index });
+  } catch (error) {
+    console.error('Error listing valuation history:', error);
+    res.status(500).json({ error: 'Failed to list history: ' + error.message });
+  }
+});
+
+// Download a saved snapshot as CSV
+app.get('/api/valuation/history/:id/csv', (req, res) => {
+  try {
+    assertValidHistoryId(req.params.id);
+    const filePath = path.join(VALUATION_HISTORY_DIR, `${req.params.id}.json`);
+    const entry = JSON.parse(fs.readFileSync(filePath, 'utf8'));
+    const csv = valuationRowsToCsv(entry.rows);
+    res.setHeader('Content-Type', 'text/csv');
+    res.setHeader('Content-Disposition', `attachment; filename="stock-valuation-${entry.savedAt.slice(0, 10)}.csv"`);
+    res.send(csv);
+  } catch (error) {
+    if (error.code === 'ENOENT') return res.status(404).json({ error: 'Snapshot not found' });
+    console.error('Error downloading valuation history:', error);
+    res.status(500).json({ error: 'Failed to download snapshot: ' + error.message });
+  }
+});
+
+// Change a snapshot's status — active / archived / deleted, all reversible
+app.post('/api/valuation/history/:id/status', (req, res) => {
+  try {
+    assertValidHistoryId(req.params.id);
+    const { status } = req.body || {};
+    if (!VALUATION_HISTORY_STATUSES.includes(status)) {
+      return res.status(400).json({ error: `status must be one of: ${VALUATION_HISTORY_STATUSES.join(', ')}` });
+    }
+
+    const index = readValuationHistoryIndex();
+    const entry = index.find(e => e.id === req.params.id);
+    if (!entry) return res.status(404).json({ error: 'Snapshot not found' });
+    entry.status = status;
+    writeValuationHistoryIndex(index);
+
+    const filePath = path.join(VALUATION_HISTORY_DIR, `${req.params.id}.json`);
+    try {
+      const full = JSON.parse(fs.readFileSync(filePath, 'utf8'));
+      full.status = status;
+      fs.writeFileSync(filePath, JSON.stringify(full, null, 2));
+    } catch { /* index is the source of truth for listing either way */ }
+
+    res.json({ success: true });
+  } catch (error) {
+    console.error('Error updating valuation history status:', error);
+    res.status(500).json({ error: 'Failed to update status: ' + error.message });
+  }
+});
+
 // Settings — view/edit .env-backed configuration from the web UI
 const ENV_PATH = path.join(__dirname, '.env');
 
@@ -473,9 +677,7 @@ const SETTINGS_FIELDS = {
   HALO_TOKEN_URL: { secret: false },
   PORT: { secret: false },
   ALLOWLIST_HOST: { secret: false },
-  PROXY_IP: { secret: false },
-  SYNCRO_API_TOKEN: { secret: true },
-  SYNCRO_BASE_URL: { secret: false }
+  PROXY_IP: { secret: false }
 };
 
 function readEnvFile() {
@@ -500,10 +702,6 @@ function writeEnvFile(vars) {
     '# IP Allowlist',
     `ALLOWLIST_HOST=${vars.ALLOWLIST_HOST || ''}`,
     `PROXY_IP=${vars.PROXY_IP || ''}`,
-    '',
-    '# Syncro API (one-off asset-tag import)',
-    `SYNCRO_API_TOKEN=${vars.SYNCRO_API_TOKEN || ''}`,
-    `SYNCRO_BASE_URL=${vars.SYNCRO_BASE_URL || ''}`,
     ''
   ];
   fs.writeFileSync(ENV_PATH, lines.join('\n'), { mode: 0o600 });

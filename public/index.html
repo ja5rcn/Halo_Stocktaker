@@ -11,11 +11,51 @@
             box-sizing: border-box;
         }
 
+        :root {
+            --accent: #e39e39;
+            --accent-dark: #c47f1a;
+            --bg: #f9f9f9;
+            --surface: #fff;
+            --border: #ddd;
+            --text: #333;
+            --muted-text: #666;
+            --th-bg: #f3f3f3;
+            --input-bg: #fff;
+            --input-border: #ccc;
+            --warn-bg: #fff7ed;
+            --warn-border: #fed7aa;
+            --bad-bg: #fee2e2;
+            --bad-border: #fecaca;
+            --ok-bg: #ecfdf5;
+            --ok-border: #a7f3d0;
+            --sort-hover: #e8e8e8;
+        }
+
+        body.dark {
+            --bg: #1a1a1a;
+            --surface: #242424;
+            --border: #3a3a3a;
+            --text: #e8e8e8;
+            --muted-text: #999;
+            --th-bg: #2e2e2e;
+            --input-bg: #2e2e2e;
+            --input-border: #444;
+            --warn-bg: #2d2000;
+            --warn-border: #7a5000;
+            --bad-bg: #2d0f0f;
+            --bad-border: #7a2020;
+            --ok-bg: #0f2d1f;
+            --ok-border: #1a6040;
+            --sort-hover: #333;
+        }
+
         body {
-            font-family: -apple-system, BlinkMacSystemFont, 'Segoe UI', Roboto, Oxygen, Ubuntu, Cantarell, sans-serif;
-            background: linear-gradient(135deg, #667eea 0%, #764ba2 100%);
+            font-family: Arial, -apple-system, BlinkMacSystemFont, 'Segoe UI', Roboto, Oxygen, Ubuntu, Cantarell, sans-serif;
+            background: var(--bg);
+            color: var(--text);
             min-height: 100vh;
             padding: 20px;
+            transition: background .2s, color .2s;
         }
 
         .container {
@@ -24,76 +64,104 @@
         }
 
         .header {
-            background: white;
-            border-radius: 12px;
-            padding: 30px;
-            margin-bottom: 20px;
-            box-shadow: 0 4px 6px rgba(0, 0, 0, 0.1);
+            background: var(--surface);
+            border: 1px solid var(--border);
+            border-radius: 8px;
+            padding: 18px 25px;
+            margin-bottom: 18px;
+            display: flex;
+            justify-content: space-between;
+            align-items: center;
+            gap: 10px;
+            flex-wrap: wrap;
         }
 
         .header h1 {
-            color: #333;
-            margin-bottom: 10px;
-            font-size: 2em;
+            color: var(--text);
+            font-size: 1.6em;
         }
 
         .header p {
-            color: #666;
-            margin-bottom: 20px;
+            color: var(--muted-text);
+            font-size: 0.9em;
+        }
+
+        #darkBtn {
+            font-size: 18px;
+            padding: 6px 10px;
+            line-height: 1;
+            background: var(--surface);
+            border: 1px solid var(--border);
+            border-radius: 6px;
+            color: var(--text);
+            cursor: pointer;
+        }
+
+        #darkBtn:hover {
+            background: var(--sort-hover);
         }
 
         .card {
-            background: white;
-            border-radius: 12px;
-            padding: 25px;
-            margin-bottom: 20px;
-            box-shadow: 0 4px 6px rgba(0, 0, 0, 0.1);
+            background: var(--surface);
+            border: 1px solid var(--border);
+            border-radius: 8px;
+            padding: 18px;
+            margin-bottom: 18px;
         }
 
         .card h2 {
-            color: #333;
+            color: var(--text);
             margin-bottom: 20px;
             font-size: 1.5em;
         }
 
         .button {
-            background: #667eea;
-            color: white;
-            border: none;
-            padding: 12px 24px;
-            border-radius: 8px;
+            display: inline-block;
+            background: var(--surface);
+            color: var(--text);
+            border: 1px solid var(--border);
+            padding: 10px 18px;
+            border-radius: 6px;
             cursor: pointer;
-            font-size: 16px;
+            font-size: 14px;
             font-weight: 600;
-            transition: all 0.3s ease;
+            font-family: inherit;
+            transition: background .15s;
         }
 
         .button:hover {
-            background: #5568d3;
-            transform: translateY(-2px);
-            box-shadow: 0 6px 12px rgba(102, 126, 234, 0.4);
+            background: var(--sort-hover);
         }
 
         .button:disabled {
-            background: #ccc;
+            background: var(--sort-hover);
+            color: var(--muted-text);
             cursor: not-allowed;
-            transform: none;
+        }
+
+        .button.primary {
+            background: var(--accent) !important;
+            color: #fff !important;
+            border-color: var(--accent-dark) !important;
+        }
+
+        .button.primary:hover {
+            background: var(--accent-dark) !important;
         }
 
         .button.secondary {
-            background: #48bb78;
-        }
-
-        .button.secondary:hover {
-            background: #38a169;
+            background: var(--ok-bg);
+            border-color: var(--ok-border);
         }
 
         .button.danger {
-            background: #f56565;
+            background: #dc2626 !important;
+            color: #fff !important;
+            border-color: #b91c1c !important;
         }
 
         .button.danger:hover {
-            background: #e53e3e;
+            background: #b91c1c !important;
         }
 
         .input-group {
@@ -103,7 +171,7 @@
         .input-group label {
             display: block;
             margin-bottom: 8px;
-            color: #333;
+            color: var(--text);
             font-weight: 600;
         }
 
@@ -111,18 +179,20 @@
         .input-group select,
         .input-group textarea {
             width: 100%;
-            padding: 12px;
-            border: 2px solid #e2e8f0;
-            border-radius: 8px;
-            font-size: 16px;
-            transition: border-color 0.3s ease;
+            padding: 10px 12px;
+            border: 1px solid var(--input-border);
+            border-radius: 6px;
+            background: var(--input-bg);
+            color: var(--text);
+            font-size: 15px;
+            transition: border-color 0.2s ease;
         }
 
         .input-group input:focus,
         .input-group select:focus,
         .input-group textarea:focus {
             outline: none;
-            border-color: #667eea;
+            border-color: var(--accent);
         }
 
         .stocktake-list {
@@ -183,12 +253,12 @@
         .loading {
             text-align: center;
             padding: 40px;
-            color: #666;
+            color: var(--muted-text);
         }
 
         .spinner {
-            border: 4px solid #f3f3f3;
-            border-top: 4px solid #667eea;
+            border: 4px solid var(--th-bg);
+            border-top: 4px solid var(--accent);
             border-radius: 50%;
             width: 40px;
             height: 40px;
@@ -206,7 +276,7 @@
         }
 
         .muted {
-            color: #666;
+            color: var(--muted-text);
             font-size: 0.9em;
         }
 
@@ -413,64 +483,65 @@
         }
 
         .alert {
-            padding: 15px;
-            border-radius: 8px;
+            padding: 12px 15px;
+            border-radius: 6px;
             margin-bottom: 20px;
         }
 
         .alert.success {
-            background: #d4edda;
-            color: #155724;
-            border: 1px solid #c3e6cb;
+            background: var(--ok-bg);
+            color: #15803d;
+            border: 1px solid var(--ok-border);
         }
 
         .alert.error {
-            background: #f8d7da;
-            color: #721c24;
-            border: 1px solid #f5c6cb;
+            background: var(--bad-bg);
+            color: #b91c1c;
+            border: 1px solid var(--bad-border);
         }
 
         .alert.info {
-            background: #d1ecf1;
-            color: #0c5460;
-            border: 1px solid #bee5eb;
+            background: var(--warn-bg);
+            color: #b45309;
+            border: 1px solid var(--warn-border);
         }
 
         .tabs {
             display: flex;
-            border-bottom: 2px solid #e2e8f0;
+            border-bottom: 2px solid var(--border);
             margin-bottom: 0;
-            background: #f7fafc;
-            padding: 10px 10px 0 10px;
-            border-radius: 8px 8px 0 0;
+            background: transparent;
+            padding: 0;
+            border-radius: 0;
+            flex-wrap: wrap;
         }
 
         .tab {
-            padding: 12px 24px;
+            padding: 10px 20px;
             cursor: pointer;
             border-bottom: 2px solid transparent;
             margin-bottom: -2px;
             font-weight: 600;
-            color: #666;
-            transition: all 0.3s ease;
-            background: #e2e8f0;
-            border-radius: 8px 8px 0 0;
-            border: 1px solid #cbd5e0;
+            color: var(--muted-text);
+            transition: background .15s, color .15s;
+            background: var(--surface);
+            border-radius: 6px 6px 0 0;
+            border: 1px solid var(--border);
             margin-right: 5px;
         }
 
         .tab:hover {
-            color: #333;
-            background: #e2e8f0;
+            color: var(--text);
+            background: var(--sort-hover);
         }
 
         .tab.active {
-            background: white;
-            border-bottom: 2px solid white;
+            background: var(--surface);
+            border-bottom: 2px solid var(--surface);
             margin-bottom: -2px;
             z-index: 1;
-            color: #667eea;
-            border-color: #667eea;
+            color: var(--accent);
+            border-color: var(--accent);
         }
 
         .tab-content {
@@ -628,6 +699,45 @@
 
         .inventory-table tr:last-child td {
             border-bottom: none;
+        }
+
+        .table-wrap {
+            overflow-x: auto;
+        }
+
+        .valuation-table {
+            width: 100%;
+            border-collapse: collapse;
+            font-size: 0.9em;
+            background: var(--surface);
+            color: var(--text);
+        }
+
+        .valuation-table th {
+            background: var(--th-bg);
+            padding: 12px;
+            text-align: left;
+            font-weight: 600;
+            border-bottom: 2px solid var(--border);
+        }
+
+        .valuation-table td {
+            padding: 10px 12px;
+            border-bottom: 1px solid var(--border);
+        }
+
+        .valuation-table tr:hover {
+            background: var(--sort-hover);
+        }
+
+        th.sortable {
+            cursor: pointer;
+            user-select: none;
+            white-space: nowrap;
+        }
+
+        th.sortable:hover {
+            background: var(--sort-hover);
         }
 
         .serial-badge {
@@ -837,22 +947,27 @@
     <div class="container">
         <!-- Header -->
         <div class="header">
-            <h1>🔧 Halo Stocktake System</h1>
-            <p>Complete inventory management and stocktake solution for Halo PSA</p>
+            <div>
+                <h1>🔧 Halo Stocktake System</h1>
+                <p>Complete inventory management and stocktake solution for Halo PSA</p>
+            </div>
+            <button onclick="toggleDark()" id="darkBtn" title="Toggle dark mode">🌙</button>
         </div>
 
         <!-- Navigation Tabs -->
         <div class="tabs">
-            <div class="tab active" data-tab="dashboard">Dashboard</div>
-            <div class="tab" data-tab="create">New Stocktake</div>
-            <div class="tab" data-tab="active">Active Stocktake</div>
-            <div class="tab" data-tab="reports">Reports</div>
-            <div class="tab" data-tab="labels">Labels</div>
+            <!-- Stocktake/Reports/Labels hidden for now (not removed) — Valuation is the only workflow in active use -->
+            <div class="tab" data-tab="dashboard" style="display:none;">Dashboard</div>
+            <div class="tab" data-tab="create" style="display:none;">New Stocktake</div>
+            <div class="tab" data-tab="active" style="display:none;">Active Stocktake</div>
+            <div class="tab" data-tab="reports" style="display:none;">Reports</div>
+            <div class="tab" data-tab="labels" style="display:none;">Labels</div>
+            <div class="tab active" data-tab="valuation">💰 Valuation</div>
             <div class="tab" data-tab="settings">⚙️ Settings</div>
         </div>
 
         <!-- Dashboard Tab -->
-        <div id="dashboard" class="tab-content active">
+        <div id="dashboard" class="tab-content">
             <div class="card">
                 <h2>📊 Dashboard</h2>
                 <div id="dashboardContent">
@@ -998,6 +1113,43 @@
             </div>
         </div>
 
+        <!-- Valuation Report Tab -->
+        <div id="valuation" class="tab-content active">
+            <div class="card">
+                <h2>💰 Stock Valuation Report</h2>
+                <p class="muted">Physical stock at the selected site(s) + consigned stock on open (uninvoiced) Sales Orders, valued at cost. Pulled live from Halo.</p>
+
+                <h3 style="margin-top:16px;">Stock Sites</h3>
+                <p class="muted">Sites flagged "This Site is a Stock Location" in Halo. Pick which count toward the report.</p>
+                <div id="valuationSitesList"><div class="loading"><div class="spinner"></div></div></div>
+                <button class="button" onclick="saveValuationSites()" id="saveValuationSitesBtn" style="margin-top:8px;">Save Sites</button>
+                <div id="valuationSitesBanner"></div>
+
+                <div style="margin-top:20px; display:flex; gap:10px; align-items:center; flex-wrap:wrap;">
+                    <button class="button primary" onclick="runValuationReport()" id="runValuationBtn">▶ Run Report</button>
+                    <a class="button" href="/api/valuation/report.csv" download id="exportValuationBtn" style="display:none;">⬇ Export CSV</a>
+                    <button class="button" onclick="saveValuationToHistory()" id="saveHistoryBtn" style="display:none;">💾 Save to History</button>
+                    <span id="valuationRunStatus" class="muted"></span>
+                </div>
+
+                <div id="valuationResults" style="margin-top:16px;"></div>
+            </div>
+
+            <div class="card">
+                <h2>🗂 Report History</h2>
+                <p class="muted">Saved snapshots, downloadable any time. Archive or delete are both reversible.</p>
+                <div style="display:flex; gap:16px; align-items:center; margin:10px 0;">
+                    <label style="display:flex; align-items:center; gap:6px; font-weight:normal;">
+                        <input type="checkbox" id="historyShowArchived" onchange="loadValuationHistory()"> Show archived
+                    </label>
+                    <label style="display:flex; align-items:center; gap:6px; font-weight:normal;">
+                        <input type="checkbox" id="historyShowDeleted" onchange="loadValuationHistory()"> Show deleted
+                    </label>
+                </div>
+                <div id="valuationHistoryList"><div class="loading"><div class="spinner"></div></div></div>
+            </div>
+        </div>
+
         <!-- Settings Tab -->
         <div id="settings" class="tab-content">
             <div class="card">
@@ -1041,17 +1193,6 @@
                 <div class="input-group">
                     <label for="settingProxyIp">Proxy IP</label>
                     <input type="text" id="settingProxyIp" placeholder="10.0.0.1">
-                </div>
-
-                <h3 style="margin-top:20px;">Syncro API (asset-tag import script)</h3>
-                <div class="input-group">
-                    <label for="settingSyncroBaseUrl">Syncro Base URL</label>
-                    <input type="text" id="settingSyncroBaseUrl" placeholder="https://elliotts.syncromsp.com">
-                </div>
-                <div class="input-group">
-                    <label for="settingSyncroToken">Syncro API Token</label>
-                    <input type="password" id="settingSyncroToken" placeholder="(unchanged)" autocomplete="off">
-                    <p id="settingSyncroTokenStatus" class="muted"></p>
                 </div>
 
                 <button class="button" onclick="saveSettings()" id="saveSettingsBtn">Save Settings</button>
@@ -1114,6 +1255,20 @@
     </div>
 
     <script>
+        // Dark mode — persisted to localStorage, same pattern as the other internal tools
+        (function() {
+            if (localStorage.getItem('darkMode') === '1') { document.body.classList.add('dark'); updateDarkBtn(); }
+        })();
+        function toggleDark() {
+            document.body.classList.toggle('dark');
+            localStorage.setItem('darkMode', document.body.classList.contains('dark') ? '1' : '0');
+            updateDarkBtn();
+        }
+        function updateDarkBtn() {
+            const btn = document.getElementById('darkBtn');
+            if (btn) btn.textContent = document.body.classList.contains('dark') ? '☀️' : '🌙';
+        }
+
         // Tab navigation — syncs with URL hash so refresh/back-forward preserves tab
         function hashSegments() {
             const raw = (location.hash || '').replace(/^#/, '');
@@ -1152,15 +1307,15 @@
         // Back/forward — re-activate tab from hash without pushing new history
         window.addEventListener('popstate', () => {
             const { tab } = hashSegments();
-            const valid = ['dashboard', 'create', 'active', 'reports', 'labels', 'settings'];
-            activateTab(valid.includes(tab) ? tab : 'dashboard', false);
+            const valid = ['dashboard', 'create', 'active', 'reports', 'labels', 'valuation', 'settings'];
+            activateTab(valid.includes(tab) ? tab : 'valuation', false);
         });
 
         // On initial load — jump to tab from URL hash
         (function initTabFromHash() {
-            const valid = ['dashboard', 'create', 'active', 'reports', 'labels', 'settings'];
+            const valid = ['dashboard', 'create', 'active', 'reports', 'labels', 'valuation', 'settings'];
             const { tab, sub } = hashSegments();
-            const finalTab = valid.includes(tab) ? tab : 'dashboard';
+            const finalTab = valid.includes(tab) ? tab : 'valuation';
             // Review sub-mode is read by loadActiveStocktake after the tab activates
             window.__pendingReviewMode = (finalTab === 'active' && sub === 'review');
             activateTab(finalTab, tab !== finalTab);
@@ -1181,6 +1336,201 @@
                 case 'settings':
                     loadSettings();
                     break;
+                case 'valuation':
+                    loadValuationSites();
+                    loadValuationHistory();
+                    break;
+            }
+        }
+
+        // Generic table sorter — click a th.sortable to sort its table by that column.
+        const _sortState = {};
+        function sortTable(bodyId, col, type = 'text') {
+            const tbody = document.getElementById(bodyId);
+            if (!tbody) return;
+            const rows = Array.from(tbody.querySelectorAll('tr'));
+            const state = _sortState[bodyId] || { col: -1, asc: true };
+            const asc = state.col === col ? !state.asc : true;
+            _sortState[bodyId] = { col, asc };
+            rows.sort((a, b) => {
+                const av = a.cells[col] ? a.cells[col].dataset.sort ?? a.cells[col].innerText.trim() : '';
+                const bv = b.cells[col] ? b.cells[col].dataset.sort ?? b.cells[col].innerText.trim() : '';
+                let cmp;
+                if (type === 'number') {
+                    cmp = (parseFloat(av) || 0) - (parseFloat(bv) || 0);
+                } else {
+                    cmp = String(av).toLowerCase().localeCompare(String(bv).toLowerCase());
+                }
+                return asc ? cmp : -cmp;
+            });
+            rows.forEach(r => tbody.appendChild(r));
+        }
+
+        // Valuation report — Halo stock-location sites + open-SO consigned stock
+        async function loadValuationSites() {
+            const el = document.getElementById('valuationSitesList');
+            try {
+                const data = await apiCall('/api/valuation/sites');
+                if (data.sites.length === 0) {
+                    el.innerHTML = '<p class="muted">No sites in Halo are flagged "This Site is a Stock Location".</p>';
+                    return;
+                }
+                el.innerHTML = data.sites.map(s => `
+                    <label style="display:flex; align-items:center; gap:8px; font-weight:normal; margin-top:6px;">
+                        <input type="checkbox" class="valuation-site-checkbox" value="${s.id}" ${data.selectedSiteIds.includes(s.id) ? 'checked' : ''}>
+                        ${escapeHtml(s.name)}
+                    </label>
+                `).join('');
+            } catch (err) {
+                el.innerHTML = `<div class="alert error">Failed to load sites: ${escapeHtml(err.message)}</div>`;
+            }
+        }
+
+        async function saveValuationSites() {
+            const banner = document.getElementById('valuationSitesBanner');
+            const ids = Array.from(document.querySelectorAll('.valuation-site-checkbox:checked')).map(c => Number(c.value));
+            try {
+                await apiCall('/api/valuation/sites', { method: 'POST', body: { stockSiteIds: ids } });
+                banner.innerHTML = `<div class="alert success">Saved (${ids.length} site${ids.length === 1 ? '' : 's'}).</div>`;
+            } catch (err) {
+                banner.innerHTML = `<div class="alert error">Failed to save: ${escapeHtml(err.message)}</div>`;
+            }
+        }
+
+        let lastValuationReport = null;
+
+        async function runValuationReport() {
+            const btn = document.getElementById('runValuationBtn');
+            const status = document.getElementById('valuationRunStatus');
+            const resultsEl = document.getElementById('valuationResults');
+            const exportBtn = document.getElementById('exportValuationBtn');
+            const saveHistoryBtn = document.getElementById('saveHistoryBtn');
+            btn.disabled = true;
+            exportBtn.style.display = 'none';
+            saveHistoryBtn.style.display = 'none';
+            status.textContent = 'Running against Halo — this can take a little while for open Sales Orders...';
+            resultsEl.innerHTML = '';
+            try {
+                const report = await apiCall('/api/valuation/report');
+                lastValuationReport = report;
+                status.textContent = `Generated ${new Date(report.generatedAt).toLocaleString()}`;
+                exportBtn.style.display = '';
+                saveHistoryBtn.style.display = '';
+
+                const rowsHtml = report.rows.map(r => `
+                    <tr>
+                        <td>${escapeHtml(r.itemName)}</td>
+                        <td data-sort="${r.quantity}">${r.quantity}</td>
+                        <td data-sort="${r.unitCost}">£${r.unitCost.toFixed(2)}</td>
+                        <td data-sort="${r.value}">£${r.value.toFixed(2)}</td>
+                        <td>${escapeHtml(r.source)}</td>
+                    </tr>
+                `).join('');
+
+                resultsEl.innerHTML = `
+                    <div style="display:flex; gap:20px; margin-bottom:12px; flex-wrap:wrap;">
+                        <div><strong>Stock value:</strong> £${report.totals.stockValue.toFixed(2)}</div>
+                        <div><strong>Consigned value:</strong> £${report.totals.consignedValue.toFixed(2)}</div>
+                        <div><strong>Total:</strong> £${report.totals.total.toFixed(2)}</div>
+                    </div>
+                    <div class="table-wrap">
+                    <table class="valuation-table">
+                        <thead>
+                            <tr>
+                                <th class="sortable" onclick="sortTable('valuationTableBody', 0)">Item</th>
+                                <th class="sortable" onclick="sortTable('valuationTableBody', 1, 'number')">Qty</th>
+                                <th class="sortable" onclick="sortTable('valuationTableBody', 2, 'number')">Unit Cost</th>
+                                <th class="sortable" onclick="sortTable('valuationTableBody', 3, 'number')">Value</th>
+                                <th class="sortable" onclick="sortTable('valuationTableBody', 4)">Source</th>
+                            </tr>
+                        </thead>
+                        <tbody id="valuationTableBody">${rowsHtml}</tbody>
+                    </table>
+                    </div>
+                `;
+            } catch (err) {
+                status.textContent = '';
+                resultsEl.innerHTML = `<div class="alert error">Failed to run report: ${escapeHtml(err.message)}</div>`;
+            } finally {
+                btn.disabled = false;
+            }
+        }
+
+        async function saveValuationToHistory() {
+            if (!lastValuationReport) return;
+            const btn = document.getElementById('saveHistoryBtn');
+            const status = document.getElementById('valuationRunStatus');
+            btn.disabled = true;
+            try {
+                await apiCall('/api/valuation/history', { method: 'POST', body: lastValuationReport });
+                status.textContent = 'Saved to history.';
+                await loadValuationHistory();
+            } catch (err) {
+                status.textContent = `Failed to save: ${err.message}`;
+            } finally {
+                btn.disabled = false;
+            }
+        }
+
+        async function loadValuationHistory() {
+            const el = document.getElementById('valuationHistoryList');
+            const showArchived = document.getElementById('historyShowArchived')?.checked;
+            const showDeleted = document.getElementById('historyShowDeleted')?.checked;
+            try {
+                const data = await apiCall('/api/valuation/history');
+                const visible = data.history.filter(h => {
+                    if (h.status === 'archived') return showArchived;
+                    if (h.status === 'deleted') return showDeleted;
+                    return true;
+                });
+                if (visible.length === 0) {
+                    el.innerHTML = '<p class="muted">No saved reports yet.</p>';
+                    return;
+                }
+                const rowsHtml = visible.map(h => `
+                    <tr>
+                        <td data-sort="${h.savedAt}">${new Date(h.savedAt).toLocaleString()}</td>
+                        <td data-sort="${h.totals.stockValue}">£${h.totals.stockValue.toFixed(2)}</td>
+                        <td data-sort="${h.totals.consignedValue}">£${h.totals.consignedValue.toFixed(2)}</td>
+                        <td data-sort="${h.totals.total}">£${h.totals.total.toFixed(2)}</td>
+                        <td>${h.status}</td>
+                        <td style="white-space:nowrap;">
+                            <a class="button" style="padding:4px 10px; font-size:0.85em;" href="/api/valuation/history/${h.id}/csv" download>⬇ CSV</a>
+                            ${h.status === 'active' ? `<button class="button" style="padding:4px 10px; font-size:0.85em;" onclick="setValuationHistoryStatus('${h.id}','archived')">Archive</button>` : ''}
+                            ${h.status === 'archived' ? `<button class="button" style="padding:4px 10px; font-size:0.85em;" onclick="setValuationHistoryStatus('${h.id}','active')">Unarchive</button>` : ''}
+                            ${h.status !== 'deleted' ? `<button class="button danger" style="padding:4px 10px; font-size:0.85em;" onclick="setValuationHistoryStatus('${h.id}','deleted')">Delete</button>` : ''}
+                            ${h.status === 'deleted' ? `<button class="button" style="padding:4px 10px; font-size:0.85em;" onclick="setValuationHistoryStatus('${h.id}','active')">Restore</button>` : ''}
+                        </td>
+                    </tr>
+                `).join('');
+                el.innerHTML = `
+                    <div class="table-wrap">
+                    <table class="valuation-table">
+                        <thead>
+                            <tr>
+                                <th class="sortable" onclick="sortTable('valuationHistoryBody', 0)">Saved</th>
+                                <th class="sortable" onclick="sortTable('valuationHistoryBody', 1, 'number')">Stock Value</th>
+                                <th class="sortable" onclick="sortTable('valuationHistoryBody', 2, 'number')">Consigned Value</th>
+                                <th class="sortable" onclick="sortTable('valuationHistoryBody', 3, 'number')">Total</th>
+                                <th class="sortable" onclick="sortTable('valuationHistoryBody', 4)">Status</th>
+                                <th>Actions</th>
+                            </tr>
+                        </thead>
+                        <tbody id="valuationHistoryBody">${rowsHtml}</tbody>
+                    </table>
+                    </div>
+                `;
+            } catch (err) {
+                el.innerHTML = `<div class="alert error">Failed to load history: ${escapeHtml(err.message)}</div>`;
+            }
+        }
+
+        async function setValuationHistoryStatus(id, status) {
+            try {
+                await apiCall(`/api/valuation/history/${id}/status`, { method: 'POST', body: { status } });
+                await loadValuationHistory();
+            } catch (err) {
+                alert('Failed to update: ' + err.message);
             }
         }
 
@@ -1195,18 +1545,14 @@
                 document.getElementById('settingPort').value = settings.PORT.value;
                 document.getElementById('settingAllowlistHost').value = settings.ALLOWLIST_HOST.value;
                 document.getElementById('settingProxyIp').value = settings.PROXY_IP.value;
-                document.getElementById('settingSyncroBaseUrl').value = settings.SYNCRO_BASE_URL.value;
 
                 document.getElementById('settingHaloClientId').value = '';
                 document.getElementById('settingHaloClientSecret').value = '';
-                document.getElementById('settingSyncroToken').value = '';
 
                 document.getElementById('settingHaloClientIdStatus').textContent =
                     settings.HALO_CLIENT_ID.set ? `Currently set (${settings.HALO_CLIENT_ID.masked})` : 'Not set';
                 document.getElementById('settingHaloClientSecretStatus').textContent =
                     settings.HALO_CLIENT_SECRET.set ? `Currently set (${settings.HALO_CLIENT_SECRET.masked})` : 'Not set';
-                document.getElementById('settingSyncroTokenStatus').textContent =
-                    settings.SYNCRO_API_TOKEN.set ? `Currently set (${settings.SYNCRO_API_TOKEN.masked})` : 'Not set';
             } catch (err) {
                 banner.innerHTML = `<div class="alert error">Failed to load settings: ${escapeHtml(err.message)}</div>`;
             }
@@ -1225,9 +1571,7 @@
                     HALO_CLIENT_SECRET: document.getElementById('settingHaloClientSecret').value,
                     PORT: document.getElementById('settingPort').value.trim(),
                     ALLOWLIST_HOST: document.getElementById('settingAllowlistHost').value.trim(),
-                    PROXY_IP: document.getElementById('settingProxyIp').value.trim(),
-                    SYNCRO_BASE_URL: document.getElementById('settingSyncroBaseUrl').value.trim(),
-                    SYNCRO_API_TOKEN: document.getElementById('settingSyncroToken').value
+                    PROXY_IP: document.getElementById('settingProxyIp').value.trim()
                 };
                 const result = await apiCall('/api/settings', { method: 'POST', body: payload });
                 await loadSettings();
